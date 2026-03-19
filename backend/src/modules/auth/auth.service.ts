@@ -1,8 +1,8 @@
 import bcrypt from 'bcrypt'
-import type { LoginDto, LoginResponse, JwtPayload } from './auth.types.js'
+import type { LoginDto, LoginResponse, JwtPayload, RegisterDto } from './auth.types.js'
 import { findUserByEmail, updateLastLogin } from './auth.repository.js'
 import { signAuthToken } from './auth.jwt.js'
-import { UnauthorizedError, ForbiddenError } from './auth.errors.js'
+import { UnauthorizedError, ForbiddenError, ConflictError } from './auth.errors.js'
 
 export async function loginUser(dto: LoginDto & { empresa_id: number }): Promise<LoginResponse> {
   const row = await findUserByEmail({ empresa_id: dto.empresa_id, email: dto.email })
@@ -32,6 +32,47 @@ export async function loginUser(dto: LoginDto & { empresa_id: number }): Promise
 
   const token = signAuthToken(payload)
   await updateLastLogin('users', user.id)
+
+  return { token, user }
+}
+
+export async function registerUser(dto: RegisterDto & { empresa_id: number }): Promise<LoginResponse> {
+  // 1. Verificar que el email no esté en uso en esta empresa
+  const existing = await findUserByEmail({ empresa_id: dto.empresa_id, email: dto.email })
+  if (existing) throw new ConflictError()
+
+  // 2. Hashear la contraseña — nunca guardar texto plano
+  const hashedPassword = await bcrypt.hash(dto.password, 10)
+
+  // 3. Insertar el usuario en la base de datos
+  const newId = await createUser({
+    empresa_id: dto.empresa_id,
+    firstname:  dto.firstname,
+    lastname:   dto.lastname,
+    email:      dto.email,
+    password:   hashedPassword,
+  })
+
+  // 4. Construir el objeto user para el response
+  const user = {
+    id:         newId,
+    name:       `${dto.firstname} ${dto.lastname}`.trim(),
+    email:      dto.email,
+    role:       'user' as const,
+    company_id: dto.empresa_id,
+    is_active:  true,
+  }
+
+  // 5. Generar el JWT — el usuario queda logueado automáticamente
+  const payload: JwtPayload = {
+    id:         user.id,
+    email:      user.email,
+    role:       user.role,
+    company_id: user.company_id,
+    type:       'user',
+  }
+
+  const token = signAuthToken(payload)
 
   return { token, user }
 }

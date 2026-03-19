@@ -29,3 +29,18 @@ export async function updateLastLogin(table: 'users' | 'staff', id: number): Pro
 
   await pool.query('UPDATE staff SET last_login = CURRENT_TIMESTAMP WHERE id = ?', [id])
 }
+
+export async function createUser(params: { 
+  empres_id: number, 
+  firstname: string, 
+  lastname: string, 
+  email: string, 
+  password: string 
+}): Promise<number> {
+  const [result] = await pool.query(
+    'INSERT INTO users (empresa_id, firstname, lastname, email, password, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, "active", CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+    [params.empres_id, params.firstname, params.lastname, params.email, params.password],
+  )
+  const { insertId } = result as { insertId: number }
+  return insertId
+}

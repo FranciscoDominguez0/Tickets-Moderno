@@ -18,3 +18,10 @@ export class ForbiddenError extends Error {
     this.name = 'ForbiddenError'
   }
 }
+
+export class ConflictError extends Error {
+  constructor(message = 'El email ya está registrado') {
+    super(message)
+    this.name = 'ConflictError'
+  }
+}
