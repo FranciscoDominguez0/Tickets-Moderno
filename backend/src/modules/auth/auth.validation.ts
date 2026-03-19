@@ -1,5 +1,5 @@
 import { ValidationError } from './auth.errors.js'
-import { RegisterDto } from './auth.types.js';
+import { RegisterDto } from './auth.types.js'
 
 export function validateLoginBody(body: unknown): { email: string; password: string } {
   if (!body || typeof body !== 'object') {
@@ -24,13 +24,16 @@ export function validateRegisterBody(body: unknown): RegisterDto {
     throw new ValidationError('Body inválido')
   }
 
-  const { first_name, last_name, email, password } = body as Record<string, unknown>
+  const { first_name, last_name, firstname, lastname, email, password } = body as Record<string, unknown>
 
-  if (!first_name || typeof first_name !== 'string' || first_name.trim().length < 2) {
+  const normalizedFirstname = (firstname ?? first_name) as unknown
+  const normalizedLastname = (lastname ?? last_name) as unknown
+
+  if (!normalizedFirstname || typeof normalizedFirstname !== 'string' || normalizedFirstname.trim().length < 2) {
     throw new ValidationError('Nombre inválido')
   }
 
-  if (!last_name || typeof last_name !== 'string' || last_name.trim().length < 2) {
+  if (!normalizedLastname || typeof normalizedLastname !== 'string' || normalizedLastname.trim().length < 2) {
     throw new ValidationError('Apellido inválido')
   }
 
@@ -42,5 +45,10 @@ export function validateRegisterBody(body: unknown): RegisterDto {
     throw new ValidationError('La contraseña debe tener al menos 6 caracteres')
   }
 
-  return { first_name: first_name.trim(), last_name: last_name.trim(), email: email.trim().toLowerCase(), password }
+  return {
+    firstname: normalizedFirstname.trim(),
+    lastname: normalizedLastname.trim(),
+    email: email.trim().toLowerCase(),
+    password,
+  }
 }

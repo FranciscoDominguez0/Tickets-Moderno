@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt'
 import type { LoginDto, LoginResponse, JwtPayload, RegisterDto } from './auth.types.js'
-import { findUserByEmail, updateLastLogin } from './auth.repository.js'
+import { createUser, findUserByEmail, updateLastLogin } from './auth.repository.js'
 import { signAuthToken } from './auth.jwt.js'
 import { UnauthorizedError, ForbiddenError, ConflictError } from './auth.errors.js'
 
