@@ -16,6 +16,7 @@ SET NAMES utf8mb4;
 CREATE TABLE `empresas` (
   `id`                   INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `nombre`               VARCHAR(255) NOT NULL,
+  `subdomain`            VARCHAR(100) NOT NULL,
   `estado`               ENUM('activa','suspendida','bloqueada') NOT NULL DEFAULT 'activa',
   `precio_mensual`       DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `fecha_inicio_servicio` DATE DEFAULT NULL,
@@ -26,7 +27,8 @@ CREATE TABLE `empresas` (
   `motivo_bloqueo`       VARCHAR(255) DEFAULT NULL,
   `created_at`           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_empresas_subdomain` (`subdomain`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Empresas del SaaS (multitenant root)';
 
@@ -593,8 +595,8 @@ COMMENT='Auditoría de acciones del sistema';
 -- ================================================================
 
 -- Empresa demo
-INSERT INTO `empresas` (`id`, `nombre`, `estado`, `precio_mensual`, `fecha_inicio_servicio`, `fecha_vencimiento`, `estado_pago`)
-VALUES (1, 'Demo Company', 'activa', 0.00, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'al_dia');
+INSERT INTO `empresas` (`id`, `nombre`, `subdomain`, `estado`, `precio_mensual`, `fecha_inicio_servicio`, `fecha_vencimiento`, `estado_pago`)
+VALUES (1, 'Demo Company', 'demo', 'activa', 0.00, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'al_dia');
 
 -- Departamentos demo
 INSERT INTO `departments` (`id`, `empresa_id`, `name`, `description`) VALUES
