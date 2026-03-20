@@ -5,7 +5,9 @@ import { signAuthToken } from './auth.jwt.js'
 import { UnauthorizedError, ForbiddenError, ConflictError } from './auth.errors.js'
 
 export async function loginUser(dto: LoginDto & { empresa_id: number }): Promise<LoginResponse> {
-  const row = await findUserByEmail({ empresa_id: dto.empresa_id, email: dto.email })
+  const row = await findUserByEmail({
+    empresa_id: dto.empresa_id, email: dto.email
+  })
   if (!row) throw new UnauthorizedError()
 
   const ok = await bcrypt.compare(dto.password, row.password)
@@ -38,7 +40,9 @@ export async function loginUser(dto: LoginDto & { empresa_id: number }): Promise
 
 export async function registerUser(dto: RegisterDto & { empresa_id: number }): Promise<LoginResponse> {
   // 1. Verificar que el email no esté en uso en esta empresa
-  const existing = await findUserByEmail({ empresa_id: dto.empresa_id, email: dto.email })
+  const existing = await findUserByEmail({
+    empresa_id: dto.empresa_id, email: dto.email
+  })
   if (existing) throw new ConflictError()
 
   // 2. Hashear la contraseña — nunca guardar texto plano

@@ -87,6 +87,8 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Usuarios/clientes del helpdesk';
 
+ALTER TABLE users 
+ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user';
 -- ----------------------------------------------------------------
 
 CREATE TABLE `user_login_attempts` (
