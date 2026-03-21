@@ -73,6 +73,7 @@ export async function getMeController(req: Request, res: Response): Promise<void
 
   res.json({
     id:         auth.id,
+    name:       auth.name,
     email:      auth.email,
     role:       auth.role,
     company_id: auth.company_id,

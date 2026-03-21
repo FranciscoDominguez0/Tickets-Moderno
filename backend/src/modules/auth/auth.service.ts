@@ -28,6 +28,7 @@ export async function loginUser(dto: LoginDto & { empresa_id: number }): Promise
 
   const payload: JwtPayload = {
     id: user.id,
+    name: user.name,
     email: user.email,
     role: user.role,
     company_id: user.company_id,
@@ -72,6 +73,7 @@ export async function registerUser(dto: RegisterDto & { empresa_id: number }): P
   // 5. Generar el JWT — el usuario queda logueado automáticamente
   const payload: JwtPayload = {
     id:         user.id,
+    name:       user.name,
     email:      user.email,
     role:       user.role,
     company_id: user.company_id,
@@ -103,6 +105,7 @@ export async function loginStaff(dto: LoginDto & { empresa_id: number }): Promis
 
   const payload: JwtPayload = {
     id:         user.id,
+    name:       user.name,
     email:      user.email,
     role:       user.role,
     company_id: user.company_id,
