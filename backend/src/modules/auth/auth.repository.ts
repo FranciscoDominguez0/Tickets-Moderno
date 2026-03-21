@@ -22,9 +22,8 @@ export interface StaffAuthRow {
   lastname:   string
   email:      string
   password:   string
-  role:       'agent' | 'admin'
-  status:     'active' | 'inactive'
-  avatar:     string | null
+  role:       'agent' | 'supervisor' | 'admin' | 'superadmin'
+  is_active:  0 | 1
 }
 
 export interface SuperadminRow {
@@ -80,7 +79,7 @@ export async function findStaffByEmail(params: {
   email:      string
 }): Promise<StaffAuthRow | null> {
   const [rows] = await pool.query(
-    `SELECT id, empresa_id, firstname, lastname, email, password, role, status, avatar
+    `SELECT id, empresa_id, firstname, lastname, email, password, role, is_active
      FROM staff
      WHERE empresa_id = ? AND email = ?
      LIMIT 1`,
@@ -109,11 +108,13 @@ export async function findSuperadminByEmail(email: string): Promise<SuperadminRo
 // ── Compartida ───────────────────────────────────────────────
 
 export async function updateLastLogin(
-  table: 'users' | 'staff' | 'superadmins',
+  table: 'users' | 'staff',
   id:    number
 ): Promise<void> {
-  await pool.query(
-    `UPDATE ${table} SET last_login = CURRENT_TIMESTAMP WHERE id = ?`,
-    [id],
-  )
+  if (table === 'users') {
+    await pool.query('UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', [id])
+    return
+  }
+
+  await pool.query('UPDATE staff SET last_login = CURRENT_TIMESTAMP WHERE id = ?', [id])
 }

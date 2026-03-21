@@ -1,5 +1,5 @@
 import { ValidationError } from './auth.errors.js'
-import { RegisterDto } from './auth.types.js'
+import type { RegisterDto } from './auth.types.js'
 
 export function validateLoginBody(body: unknown): { email: string; password: string } {
   if (!body || typeof body !== 'object') {
