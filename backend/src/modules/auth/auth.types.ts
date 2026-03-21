@@ -3,7 +3,7 @@ export interface JwtPayload {
   email: string    
   role: 'user' | 'agent' | 'supervisor' | 'admin' | 'superadmin'  
   company_id: number 
-  type: 'user' | 'staff'  
+  type: 'user' | 'staff' | 'superadmin'
 }
 
 export interface AuthUser {

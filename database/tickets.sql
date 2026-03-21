@@ -89,6 +89,8 @@ COMMENT='Usuarios/clientes del helpdesk';
 
 ALTER TABLE users 
 ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user';
+
+ALTER TABLE users ADD COLUMN last_login DATETIME NULL;
 -- ----------------------------------------------------------------
 
 CREATE TABLE `user_login_attempts` (

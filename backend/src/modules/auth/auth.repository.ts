@@ -105,16 +105,48 @@ export async function findSuperadminByEmail(email: string): Promise<SuperadminRo
   return row ?? null
 }
 
-// ── Compartida ───────────────────────────────────────────────
+
 
 export async function updateLastLogin(
   table: 'users' | 'staff',
   id:    number
 ): Promise<void> {
-  if (table === 'users') {
-    await pool.query('UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', [id])
-    return
-  }
+  await pool.query(
+    `UPDATE ${table} SET last_login = CURRENT_TIMESTAMP WHERE id = ?`,
+    [id],
+  )
+}
 
-  await pool.query('UPDATE staff SET last_login = CURRENT_TIMESTAMP WHERE id = ?', [id])
+// Para rehidratar sesión de usuario
+export async function findUserById(params: {
+  id:         number
+  empresa_id: number 
+}): Promise<UserAuthRow | null> {
+  const [rows] = await pool.query(
+    `SELECT id, empresa_id, firstname, lastname, email, status
+     FROM users
+     WHERE id = ? AND empresa_id = ?
+     LIMIT 1`,
+    [params.id, params.empresa_id],
+  )
+
+  const row = (rows as UserAuthRow[])[0]
+  return row ?? null
+}
+
+// Para rehidratar sesión de staff
+export async function findStaffById(params: {
+  id:         number
+  empresa_id: number 
+}): Promise<StaffAuthRow | null> {
+  const [rows] = await pool.query(
+    `SELECT id, empresa_id, firstname, lastname, email, role, is_active
+     FROM staff
+     WHERE id = ? AND empresa_id = ?
+     LIMIT 1`,
+    [params.id, params.empresa_id],
+  )
+
+  const row = (rows as StaffAuthRow[])[0]
+  return row ?? null
 }

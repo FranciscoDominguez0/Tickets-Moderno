@@ -2,6 +2,7 @@ import type { Request, Response } from 'express'
 import { validateLoginBody, validateRegisterBody } from './auth.validation.js'
 import { loginStaff, loginUser, registerUser } from './auth.service.js'
 import { ConflictError, ForbiddenError, UnauthorizedError, ValidationError } from './auth.errors.js'
+import type { JwtPayload } from './auth.types.js'
 
 export async function loginUserController(req: Request, res: Response): Promise<void> {
   try {
@@ -63,4 +64,18 @@ export async function loginStaffController(req: Request, res: Response): Promise
     console.error('loginStaffController error:', err)
     res.status(500).json({ message: 'Error interno del servidor' })
   }
+}
+
+export async function getMeController(req: Request, res: Response): Promise<void> {
+  // El payload ya está verificado por requireAuth
+  // Solo lo devuelves — sin consultar la DB porque ya tienes todo
+  const auth = res.locals.auth as JwtPayload
+
+  res.json({
+    id:         auth.id,
+    email:      auth.email,
+    role:       auth.role,
+    company_id: auth.company_id,
+    type:       auth.type,
+  })
 }

@@ -1,9 +1,10 @@
 import bcrypt from 'bcrypt'
-import type { LoginDto, LoginResponse, JwtPayload, RegisterDto } from './auth.types.js'
-import { createUser, findStaffByEmail, findUserByEmail, updateLastLogin } from './auth.repository.js'
+import type { LoginDto, LoginResponse, JwtPayload, RegisterDto, AuthUser } from './auth.types.js'
+import { createUser, findStaffByEmail, findStaffById, findUserByEmail, findUserById, updateLastLogin } from './auth.repository.js'
 import { signAuthToken } from './auth.jwt.js'
 import { UnauthorizedError, ForbiddenError, ConflictError } from './auth.errors.js'
-import { validateLoginBody } from './auth.validation.js'
+
+
 
 export async function loginUser(dto: LoginDto & { empresa_id: number }): Promise<LoginResponse> {
   const row = await findUserByEmail({
@@ -112,4 +113,48 @@ export async function loginStaff(dto: LoginDto & { empresa_id: number }): Promis
   await updateLastLogin('staff', user.id)
 
   return { token, user }
+}
+
+
+
+export async function getMe(auth: JwtPayload): Promise<AuthUser> {
+
+  // ── Usuario cliente ──────────────────────────────────────
+  if (auth.type === 'user') {
+    const row = await findUserById({
+      id:         auth.id,
+      empresa_id: auth.company_id,
+    })
+
+    // Si no existe o fue baneado después de sacar el token
+    if (!row) throw new UnauthorizedError('Sesión inválida')
+    if (row.status !== 'active') throw new ForbiddenError('Usuario inactivo')
+
+    return {
+      id:         row.id,
+      name:       `${row.firstname} ${row.lastname}`.trim(),
+      email:      row.email,
+      role:       'user',
+      company_id: row.empresa_id,
+      is_active:  true,
+    }
+  }
+
+  // ── Staff (agente, supervisor, admin, superadmin) ────────
+  const row = await findStaffById({
+    id:         auth.id,
+    empresa_id: auth.company_id,
+  })
+
+  if (!row) throw new UnauthorizedError('Sesión inválida')
+  if (row.is_active !== 1) throw new ForbiddenError('Cuenta inactiva')
+
+  return {
+    id:         row.id,
+    name:       `${row.firstname} ${row.lastname}`.trim(),
+    email:      row.email,
+    role:       row.role,
+    company_id: row.empresa_id,
+    is_active:  true,
+  }
 }
