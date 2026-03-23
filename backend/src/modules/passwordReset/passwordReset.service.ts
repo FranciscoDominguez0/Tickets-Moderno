@@ -1,16 +1,17 @@
-// Lógica de negocio del flujo forgot-password.
-// Genera el token crudo, lo hashea, lo persiste y envía el email.
-// Importante: siempre responde 200 aunque el email no exista
-// para no revelar qué emails están registrados (seguridad).
 
 import crypto       from 'crypto'
+import bcrypt from 'bcrypt'
 import nodemailer   from 'nodemailer'
 import { env }      from '../../config/env.js'
 import { hashTocken } from '../../utils/hashToken.js'
 import {
   findUserForReset,
   createPasswordResetToken,
+  findValidResetToken,
+  updateUserPassword,
+  markTokenAsUsed,
 } from './passwordReset.repository.js'
+import { ValidationError } from '../auth/auth.errors.js'
 
 // ── Caso de uso principal ─────────────────────────────────────
 
@@ -108,4 +109,34 @@ async function sendResetEmail(params: {
       </div>
     `,
   })
+}
+
+export async function resetPassword(params: {
+  empresa_id:  number
+  rawToken:    string
+  newPassword: string
+}): Promise<void> {
+  
+  const tokenHash = hashTocken(params.rawToken)
+
+
+  const resetToken = await findValidResetToken({
+    empresa_id: params.empresa_id,
+    token_hash: tokenHash,
+  })
+
+ 
+  if (!resetToken) {
+    throw new ValidationError('El enlace no es válido o ya expiró')
+  }
+
+  const passwordHash = await bcrypt.hash(params.newPassword, 10)
+
+  await updateUserPassword({
+    user_id:      resetToken.user_id,
+    empresa_id:   params.empresa_id,
+    passwordHash,
+  })
+  
+  await markTokenAsUsed(resetToken.id)
 }

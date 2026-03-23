@@ -4,8 +4,9 @@
 // No requiere autenticación — es una ruta pública.
 
 import { Router }                   from 'express'
-import { forgotPasswordController } from './passwordReset.controller.js'
+import { forgotPasswordController, resetPasswordController } from './passwordReset.controller.js'
 
 export const passwordResetRouter = Router()
 
 passwordResetRouter.post('/forgot-password', forgotPasswordController)
+passwordResetRouter.post('/reset-password',  resetPasswordController)  
