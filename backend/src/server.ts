@@ -1,31 +1,36 @@
-// src/server.ts
-
-import express from 'express'
-import cors from 'cors'
-import { env } from './config/env.js'
-import { checkDb } from './config/database.js'
-import { tenantMiddleware } from './middleware/tenant.middleware.js'
-import { apiRouter } from './routes/index.js'
+import express        from 'express'
+import cors           from 'cors'
+import { env }        from './config/env.js'
+import { corsOptions } from './config/cors.js'
+import { checkDb }    from './config/database.js'
+import { tenantMiddleware }  from './middleware/tenant.middleware.js'
+import { errorHandler }      from './middleware/errorHandler.middleware.js'
+import { apiRouter }  from './routes/index.js'
 
 const app = express()
 
-// Middlewares globales de Express
-app.use(cors({ origin: env.frontendUrl, credentials: true }))
+// ① CORS — primero siempre, antes de todo
+app.use(cors(corsOptions))
+
+// ② Body parsers
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-// Health check — fuera del /api porque lo usa el servidor, no el cliente
+// ③ Health check — sin tenant ni auth
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
-// Todas las rutas bajo /api
+// ④ Rutas de la API
 app.use('/api', tenantMiddleware, apiRouter)
+
+// ⑤ Error handler — siempre al final, después de las rutas
+app.use(errorHandler)
 
 async function bootstrap(): Promise<void> {
   await checkDb()
   app.listen(env.port, () => {
-    console.log(` Server corriendo en http://localhost:${env.port}`)
+    console.log(`Server corriendo en http://localhost:${env.port}`)
   })
 }
 

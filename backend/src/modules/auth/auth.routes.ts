@@ -4,6 +4,7 @@ import { requireAuth } from '../../middleware/auth.middleware.js'
 
 export const authRouter = Router()
 
+
 authRouter.post('/login/user', loginUserController)
 authRouter.post('/login/staff', loginStaffController)
 authRouter.post('/register', registerUserController)

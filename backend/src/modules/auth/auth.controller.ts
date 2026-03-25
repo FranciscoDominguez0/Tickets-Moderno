@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express'
 import { validateLoginBody, validateRegisterBody } from './auth.validation.js'
-import { loginStaff, loginUser, registerUser } from './auth.service.js'
+import { getMe, loginStaff, loginUser, registerUser } from './auth.service.js'
 import { ConflictError, ForbiddenError, UnauthorizedError, ValidationError } from './auth.errors.js'
 import type { JwtPayload } from './auth.types.js'
 
@@ -67,16 +67,15 @@ export async function loginStaffController(req: Request, res: Response): Promise
 }
 
 export async function getMeController(req: Request, res: Response): Promise<void> {
-  // El payload ya está verificado por requireAuth
-  // Solo lo devuelves — sin consultar la DB porque ya tienes todo
-  const auth = res.locals.auth as JwtPayload
+  try {
+    const auth   = res.locals.auth as JwtPayload
+    const result = await getMe(auth)   // ← consulta la DB, datos frescos
+    res.json(result)
+  } catch (err) {
+    if (err instanceof UnauthorizedError) { res.status(401).json({ message: err.message }); return }
+    if (err instanceof ForbiddenError)    { res.status(403).json({ message: err.message }); return }
 
-  res.json({
-    id:         auth.id,
-    name:       auth.name,
-    email:      auth.email,
-    role:       auth.role,
-    company_id: auth.company_id,
-    type:       auth.type,
-  })
+    console.error('getMeController error:', err)
+    res.status(500).json({ message: 'Error interno del servidor' })
+  }
 }

@@ -1,6 +1,6 @@
 import { pool }               from '../../config/database.js'
 import type { RowDataPacket } from 'mysql2'
-import type { Ticket, TicketUserView, TicketAgentView } from './ticket.types.js'
+import type {TicketUserView, TicketAgentView } from './ticket.types.js'
 
 // ── Helper WHERE reutilizable ────────────────────────────────
 
@@ -39,37 +39,6 @@ interface FindByUserParams extends BaseFilters {
 
 type CountByUserParams = Omit<FindByUserParams, 'limit' | 'offset'>
 
-export async function findTicketsByUser(params: FindByUserParams): Promise<Ticket[]> {
-  const { conditions, values } = buildBaseWhere(params)
-  conditions.push('t.user_id = ?')
-  values.push(params.user_id)
-  const where = conditions.join(' AND ')
-
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT
-       t.id, t.ticket_number, t.subject,
-       t.status_id,   ts.name AS status,
-       t.priority_id, p.name  AS priority,
-       t.dept_id,     d.name  AS department,
-       t.topic_id,    ht.name AS topic,
-       t.staff_id,
-       CONCAT(s.firstname, ' ', s.lastname) AS assigned_to,
-       t.source, t.due_at, t.closed_at,
-       t.created_at, t.updated_at
-     FROM tickets t
-     INNER JOIN ticket_status ts ON ts.id = t.status_id
-     INNER JOIN priorities p     ON p.id  = t.priority_id
-     INNER JOIN departments d    ON d.id  = t.dept_id
-     LEFT  JOIN help_topics ht   ON ht.id = t.topic_id
-     LEFT  JOIN staff s          ON s.id  = t.staff_id
-     WHERE ${where}
-     ORDER BY t.updated_at DESC
-     LIMIT ? OFFSET ?`,
-    [...values, params.limit, params.offset],
-  )
-
-  return rows as Ticket[]
-}
 
 export async function countTicketsByUser(params: CountByUserParams): Promise<number> {
   const { conditions, values } = buildBaseWhere(params)

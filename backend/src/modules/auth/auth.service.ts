@@ -1,5 +1,4 @@
 import bcrypt from 'bcrypt'
-import { hashTocken } from '../../utils/hashToken.js'
 import type { LoginDto, LoginResponse, JwtPayload, RegisterDto, AuthUser } from './auth.types.js'
 import { createUser, findStaffByEmail, findStaffById, findUserByEmail, findUserById, updateLastLogin } from './auth.repository.js'
 import { signAuthToken } from './auth.jwt.js'

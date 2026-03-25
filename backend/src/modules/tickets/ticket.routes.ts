@@ -1,20 +1,35 @@
-import { Router }                  from 'express'
-import { requireAdmin, requireAuth, requireUser } from '../../middleware/auth.middleware.js'
-import { tenantMiddleware }        from '../../middleware/tenant.middleware.js'
-import {getTicketsForUserController, getTicketsForAgentController }  from './ticket.controller.js'
+import { Router } from "express";
+import { requireAuth } from "../../middleware/auth.middleware.js";
+import { tenantMiddleware } from "../../middleware/tenant.middleware.js";
+import { requireRole } from "../../middleware/role.middleware.js";
 
-export const ticketUserRouter = Router()
+import {
+  getTicketsForUserController,
+  getTicketsForAgentController,
+} from "./ticket.controller.js";
 
-ticketUserRouter.use(tenantMiddleware)
-ticketUserRouter.use(requireAuth)
-ticketUserRouter.use(requireUser)
+// ─────────────────────────────────────────────
+// Router de USUARIOS
+// ─────────────────────────────────────────────
+export const ticketUserRouter = Router();
 
-ticketUserRouter.get('/tickets', getTicketsForUserController)
+ticketUserRouter.use(
+  tenantMiddleware,
+  requireAuth,
+  requireRole("user")
+);
 
+ticketUserRouter.get("/tickets", getTicketsForUserController);
 
-export const ticketAgentRouter = Router()
+// ─────────────────────────────────────────────
+//  Router de AGENTES / ADMIN
+// ─────────────────────────────────────────────
+export const ticketAgentRouter = Router();
 
-ticketAgentRouter.use(tenantMiddleware)
-ticketAgentRouter.use(requireAuth)
-ticketAgentRouter.use(requireAdmin)
-ticketAgentRouter.get('/tickets', getTicketsForAgentController)
+ticketAgentRouter.use(
+  tenantMiddleware,
+  requireAuth,
+  requireRole("agent", "admin", "superadmin")
+);
+
+ticketAgentRouter.get("/tickets", getTicketsForAgentController);

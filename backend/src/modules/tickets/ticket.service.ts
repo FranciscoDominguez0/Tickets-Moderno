@@ -1,5 +1,4 @@
 import {
-  findTicketsByUser,
   countTicketsByUser,
   findTicketsSummaryByUser,
   findTicketsForAgent,
