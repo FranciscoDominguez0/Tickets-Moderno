@@ -1,24 +1,5 @@
 // ── Vista completa (detalle de ticket) ──────────────────────
-export interface Ticket {
-  id:            number
-  ticket_number: string
-  subject:       string
-  status_id:     number
-  status:        string
-  priority_id:   number
-  priority:      string
-  dept_id:       number
-  department:    string
-  topic_id:      number | null
-  topic:         string | null
-  staff_id:      number | null
-  assigned_to:   string | null
-  source:        'web' | 'email' | 'api' | 'phone'
-  due_at:        string | null
-  closed_at:     string | null
-  created_at:    string
-  updated_at:    string
-}
+
 
 // ── Vista resumida para usuario (lista de mis tickets) ──────
 export interface TicketUserView {

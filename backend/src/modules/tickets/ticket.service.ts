@@ -8,7 +8,6 @@ import {
 import { parsePagination, buildPaginatedResult } from '../../utils/pagination.js'
 import type { PaginatedResult }                  from '../../utils/pagination.js'
 import type {
-  Ticket,
   TicketUserView,
   TicketAgentView,
   ListTicketsQuery,
@@ -29,22 +28,7 @@ function validateNumericFilters(params: ListTicketsQuery): void {
 
 // ── Usuario — detalle completo ───────────────────────────────
 
-export async function listMyTickets(
-  params: ListTicketsQuery & { empresa_id: number; user_id: number }
-): Promise<PaginatedResult<Ticket>> {
-  validateNumericFilters(params)
-  const { page, limit, offset } = parsePagination(params)
-  const filters = { empresa_id: params.empresa_id, user_id: params.user_id,
-    status_id: params.status_id, priority_id: params.priority_id,
-    dept_id: params.dept_id, search: params.search?.trim() || undefined }
 
-  const [data, total] = await Promise.all([
-    findTicketsByUser({ ...filters, limit, offset }),
-    countTicketsByUser(filters),
-  ])
-
-  return buildPaginatedResult(data, total, page, limit)
-}
 
 // ── Usuario — vista resumida ─────────────────────────────────
 

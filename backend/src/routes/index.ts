@@ -1,7 +1,7 @@
 import { Router }              from 'express'
 import { authRouter }          from '../modules/auth/auth.routes.js'
 import { passwordResetRouter } from '../modules/passwordReset/passwordReset.routes.js'
-import { ticketUserRouter } from '../modules/tickets/ticket.routes.js'
+import { ticketAgentRouter, ticketUserRouter } from '../modules/tickets/ticket.routes.js'
 
 export const apiRouter = Router()
 
@@ -12,6 +12,7 @@ apiRouter.use('/auth', authRouter)
 apiRouter.use('/auth', passwordResetRouter)
 
 apiRouter.use('/user', ticketUserRouter)
+apiRouter.use('/staff', ticketAgentRouter)
 
 
 
