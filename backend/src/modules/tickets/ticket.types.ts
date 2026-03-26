@@ -1,6 +1,3 @@
-// ── Vista completa (detalle de ticket) ──────────────────────
-
-
 // ── Vista resumida para usuario (lista de mis tickets) ──────
 export interface TicketUserView {
   ticket_number: string
@@ -20,8 +17,8 @@ export interface TicketAgentView {
   priority:      string
   department:    string
   topic:         string | null
-  assigned_to:   string | null  // puede no estar asignado
-  user_name:     string         // quién abrió el ticket
+  assigned_to:   string | null
+  user_name:     string
   user_email:    string
   source:        'web' | 'email' | 'api' | 'phone'
   due_at:        string | null
@@ -41,6 +38,27 @@ export interface ListTicketsQuery {
 
 // ── Filtros extra solo para agentes ─────────────────────────
 export interface ListTicketsAgentQuery extends ListTicketsQuery {
-  staff_id?:    number   // filtrar por agente asignado
-  unassigned?:  boolean  // solo tickets sin asignar
+  staff_id?:   number
+  unassigned?: boolean
+}
+
+// ── Crear ticket — usuario crea el suyo ─────────────────────
+export interface CreateTicketDto {
+  subject:      string
+  topic_id:     number
+  dept_id:      number
+  priority_id?: number
+}
+
+// ── Crear ticket — agente crea en nombre de un usuario ──────
+export interface CreateTicketByAgentDto extends CreateTicketDto {
+  user_id: number   // ← agente especifica a qué usuario pertenece
+}
+
+export interface CreateTicketResult {
+  id:            number
+  ticket_number: string
+  subject:       string
+  topic:         string
+  created_at:    string
 }

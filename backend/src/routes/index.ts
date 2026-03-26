@@ -8,12 +8,11 @@ export const apiRouter = Router()
 // Auth — login, register, me
 apiRouter.use('/auth', authRouter)
 
-// Password reset — forgot-password, reset-password (próximamente)
+// Password reset
 apiRouter.use('/auth', passwordResetRouter)
 
-apiRouter.use('/user', ticketUserRouter) 
-apiRouter.use('/staff', ticketAgentRouter)
-
-
+// Tickets
+apiRouter.use('/user',  ticketUserRouter)   // → /api/user/tickets
+apiRouter.use('/agent', ticketAgentRouter)  // → /api/agent/tickets
 
 export default apiRouter

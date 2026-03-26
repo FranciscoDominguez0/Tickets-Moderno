@@ -1,6 +1,7 @@
-import { ValidationError }      from './ticket.errors.js'
-import type { CreateTicketDto } from './ticket.types.js'
+import { ValidationError }                        from './ticket.errors.js'
+import type { CreateTicketDto, CreateTicketByAgentDto } from './ticket.types.js'
 
+// ── Validación para usuario ──────────────────────────────────
 export function validateCreateTicketBody(body: unknown): CreateTicketDto {
   if (!body || typeof body !== 'object') {
     throw new ValidationError('Body inválido')
@@ -9,7 +10,6 @@ export function validateCreateTicketBody(body: unknown): CreateTicketDto {
   const { subject, topic_id, dept_id, priority_id } =
     body as Record<string, unknown>
 
-  // subject es el asunto y el mensaje inicial — obligatorio
   if (!subject || typeof subject !== 'string' || subject.trim().length < 3) {
     throw new ValidationError('El asunto debe tener al menos 3 caracteres')
   }
@@ -18,7 +18,6 @@ export function validateCreateTicketBody(body: unknown): CreateTicketDto {
     throw new ValidationError('El asunto no puede superar 255 caracteres')
   }
 
-  // topic obligatorio — el frontend no puede enviar sin seleccionar
   if (!topic_id || isNaN(Number(topic_id)) || Number(topic_id) < 1) {
     throw new ValidationError('Debes seleccionar un tema')
   }
@@ -32,5 +31,23 @@ export function validateCreateTicketBody(body: unknown): CreateTicketDto {
     topic_id:    Number(topic_id),
     dept_id:     Number(dept_id),
     priority_id: priority_id ? Number(priority_id) : undefined,
+  }
+}
+
+// ── Validación para agente — igual + user_id obligatorio ────
+export function validateCreateTicketByAgentBody(body: unknown): CreateTicketByAgentDto {
+  // reutiliza toda la validación base
+  const base = validateCreateTicketBody(body)
+
+  const { user_id } = body as Record<string, unknown>
+
+  // agente debe especificar a qué usuario pertenece el ticket
+  if (!user_id || isNaN(Number(user_id)) || Number(user_id) < 1) {
+    throw new ValidationError('user_id es obligatorio')
+  }
+
+  return {
+    ...base,
+    user_id: Number(user_id),
   }
 }
