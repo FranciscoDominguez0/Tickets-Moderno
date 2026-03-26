@@ -143,3 +143,134 @@ export async function countTicketsForAgent(params: CountByAgentParams): Promise<
 
   return (rows[0] as { total: number }).total
 }
+
+export async function insertTicket(params: {
+  ticket_number: string
+  empresa_id:    number
+  user_id:       number
+  dept_id:       number
+  topic_id:      number
+  priority_id:   number
+  subject:       string
+  source:        'web' | 'email' | 'api' | 'phone'
+  ip_address:    string | null
+}): Promise<number> {
+  const [result] = await pool.query(
+    `INSERT INTO tickets
+       (ticket_number, empresa_id, user_id, dept_id, topic_id,
+        priority_id, status_id, subject, source, ip_address,
+        created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    [
+      params.ticket_number,
+      params.empresa_id,
+      params.user_id,
+      params.dept_id,
+      params.topic_id,
+      params.priority_id,
+      params.subject,
+      params.source,
+      params.ip_address,
+    ],
+  )
+
+  return (result as { insertId: number }).insertId
+}
+
+/**
+ * Crea el hilo — tabla threads, 1 por ticket
+ * Debe insertarse antes de insertar thread_entries
+ */
+export async function insertThread(params: {
+  ticket_id:  number
+  empresa_id: number
+}): Promise<number> {
+  const [result] = await pool.query(
+    `INSERT INTO threads (ticket_id, empresa_id, created_at)
+     VALUES (?, ?, CURRENT_TIMESTAMP)`,
+    [params.ticket_id, params.empresa_id],
+  )
+
+  return (result as { insertId: number }).insertId
+}
+
+/**
+ * Inserta el primer mensaje del hilo.
+ * - user_id:   viene del usuario cliente, staff_id = null
+ * - is_internal = 0 siempre para mensajes de usuario
+ */
+export async function insertThreadEntry(params: {
+  thread_id:   number
+  empresa_id:  number
+  user_id:     number | null   // null si escribe un agente
+  staff_id:    number | null   // null si escribe un usuario
+  body:        string
+  is_internal: 0 | 1           // 0 = mensaje normal, 1 = nota interna
+}): Promise<number> {
+  const [result] = await pool.query(
+    `INSERT INTO thread_entries
+       (thread_id, empresa_id, user_id, staff_id, body, is_internal,
+        is_read, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    [
+      params.thread_id,
+      params.empresa_id,
+      params.user_id,
+      params.staff_id,
+      params.body,
+      params.is_internal,
+    ],
+  )
+
+  return (result as { insertId: number }).insertId
+}
+
+/**
+ * Inserta el archivo adjunto vinculado al thread_entry.
+ * attachments no tiene ticket_id directo — solo thread_entry_id
+ */
+export async function insertAttachment(params: {
+  thread_entry_id: number
+  empresa_id:      number
+  filename:        string   // nombre generado en servidor
+  original_filename: string // nombre original del usuario
+  mimetype:        string
+  size:            number   // bytes
+  path:            string
+  hash?:           string   // SHA-256 opcional para deduplicación
+}): Promise<void> {
+  await pool.query(
+    `INSERT INTO attachments
+       (thread_entry_id, empresa_id, filename, original_filename,
+        mimetype, size, path, hash, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+    [
+      params.thread_entry_id,
+      params.empresa_id,
+      params.filename,
+      params.original_filename,
+      params.mimetype,
+      params.size,
+      params.path,
+      params.hash ?? null,
+    ],
+  )
+}
+
+/**
+ * Verifica que el topic exista, esté activo y pertenezca a la empresa.
+ */
+export async function findTopicById(params: {
+  id:         number
+  empresa_id: number
+}): Promise<{ id: number; name: string; dept_id: number } | null> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT id, name, dept_id
+     FROM help_topics
+     WHERE id = ? AND empresa_id = ? AND is_active = 1
+     LIMIT 1`,
+    [params.id, params.empresa_id],
+  )
+
+  return (rows[0] as { id: number; name: string; dept_id: number } | undefined) ?? null
+}

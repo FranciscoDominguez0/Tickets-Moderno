@@ -1,0 +1,2 @@
+ALTER TABLE sequences 
+ADD COLUMN prefix VARCHAR(10) DEFAULT '';

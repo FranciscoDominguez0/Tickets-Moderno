@@ -6,7 +6,9 @@ import { requireRole } from "../../middleware/role.middleware.js";
 import {
   getTicketsForUserController,
   getTicketsForAgentController,
+  createTicketController,
 } from "./ticket.controller.js";
+import { uploadAttachment } from "../../middleware/upload.middleware.js";
 
 // ─────────────────────────────────────────────
 // Router de USUARIOS
@@ -20,6 +22,7 @@ ticketUserRouter.use(
 );
 
 ticketUserRouter.get("/tickets", getTicketsForUserController);
+ticketUserRouter.post('/tickets', uploadAttachment, createTicketController)
 
 // ─────────────────────────────────────────────
 //  Router de AGENTES / ADMIN

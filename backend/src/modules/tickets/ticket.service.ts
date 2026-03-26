@@ -3,6 +3,11 @@ import {
   findTicketsSummaryByUser,
   findTicketsForAgent,
   countTicketsForAgent,
+  findTopicById,
+  insertTicket,
+  insertThreadEntry,
+  insertAttachment,
+  insertThread
 } from './ticket.repository.js'
 import { parsePagination, buildPaginatedResult } from '../../utils/pagination.js'
 import type { PaginatedResult }                  from '../../utils/pagination.js'
@@ -11,8 +16,12 @@ import type {
   TicketAgentView,
   ListTicketsQuery,
   ListTicketsAgentQuery,
+  CreateTicketDto,
+  CreateTicketResult,
 } from './ticket.types.js'
-import { ValidationError } from './ticket.errors.js'
+import { NotFoundError, ValidationError } from './ticket.errors.js'
+import { generateTicketNumber } from '../../utils/ticketNumber.js'
+import { hashTocken } from '../../utils/hashToken.js'
 
 // ── Validación reutilizable ──────────────────────────────────
 
@@ -70,4 +79,72 @@ export async function listTicketsForAgent(
   ])
 
   return buildPaginatedResult(data, total, page, limit)
+}
+
+export async function createTicket(params: {
+  dto:        CreateTicketDto
+  empresa_id: number
+  user_id:    number
+  ip_address: string | null
+  file?: Express.Multer.File
+}): Promise<CreateTicketResult> {
+  const { dto, empresa_id, user_id, ip_address, file } = params
+
+  // 1. Verifica que el topic sea válido para esta empresa
+  const topic = await findTopicById({ id: dto.topic_id, empresa_id })
+  if (!topic) throw new NotFoundError('El tema seleccionado no existe')
+
+  // 2. Número atómico desde la secuencia
+  const ticket_number = await generateTicketNumber(empresa_id)
+
+  // 3. Inserta el ticket
+  const ticket_id = await insertTicket({
+    ticket_number,
+    empresa_id,
+    user_id,
+    dept_id:     dto.dept_id,
+    topic_id:    dto.topic_id,
+    priority_id: dto.priority_id ?? 2,
+    subject:     dto.subject,
+    source:      'web',
+    ip_address,
+  })
+
+  // 4. Crea el hilo — tabla threads (1 por ticket)
+  const thread_id = await insertThread({ ticket_id, empresa_id })
+
+  // 5. subject actúa como primer mensaje del hilo
+  //    user_id = quien abre, staff_id = null, is_internal = 0
+  const entry_id = await insertThreadEntry({
+    thread_id,
+    empresa_id,
+    user_id,
+    staff_id:    null,
+    body:        dto.subject,
+    is_internal: 0,
+  })
+
+  // 6. Archivo adjunto — solo si vino uno
+  if (file) {
+
+    const hash = hashTocken(file.path)
+    await insertAttachment({
+      thread_entry_id:  entry_id,
+      empresa_id,
+      filename:         file.filename,
+      original_filename: file.originalname,
+      mimetype:         file.mimetype,
+      size:             file.size,
+      path:             file.path,
+      hash,
+    })
+  }
+
+  return {
+    id:            ticket_id,
+    ticket_number,
+    subject:       dto.subject,
+    topic:         topic.name,
+    created_at:    new Date().toISOString(),
+  }
 }

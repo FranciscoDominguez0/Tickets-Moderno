@@ -11,7 +11,7 @@ apiRouter.use('/auth', authRouter)
 // Password reset — forgot-password, reset-password (próximamente)
 apiRouter.use('/auth', passwordResetRouter)
 
-apiRouter.use('/user', ticketUserRouter)
+apiRouter.use('/user', ticketUserRouter) 
 apiRouter.use('/staff', ticketAgentRouter)
 
 
