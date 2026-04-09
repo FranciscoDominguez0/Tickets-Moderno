@@ -1,6 +1,6 @@
 import { pool }               from '../../config/database.js'
 import type { RowDataPacket } from 'mysql2'
-import type {TicketUserView, TicketAgentView } from './ticket.types.js'
+import type {TicketUserView, TicketAgentView, TicketDetailHeader, ThreadEntryView } from './ticket.types.js'
 
 // ── Helper WHERE reutilizable ────────────────────────────────
 
@@ -273,4 +273,92 @@ export async function findTopicById(params: {
   )
 
   return (rows[0] as { id: number; name: string; dept_id: number } | undefined) ?? null
+}
+
+// Hilo del ticket user y agente ssolo trae los datos
+export async function findTicketDetail(params: {
+  ticket_id:  number
+  empresa_id: number
+  user_id?:   number
+}): Promise<TicketDetailHeader | null> {
+
+  // Construimos el WHERE dinámicamente igual que en buildBaseWhere
+  const conditions: string[] = ['t.id = ?', 't.empresa_id = ?']
+  const values: unknown[]    = [params.ticket_id, params.empresa_id]
+
+  // Solo se agrega si es un usuario — esto es lo que protege el ownership
+  if (params.user_id !== undefined) {
+    conditions.push('t.user_id = ?')
+    values.push(params.user_id)
+  }
+
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT
+       t.ticket_number, t.subject,
+       t.source, t.ip_address, t.due_at,
+       t.created_at, t.updated_at, t.closed_at,
+       ts.name  AS status,
+       p.name   AS priority,
+       d.name   AS department,
+       ht.name  AS topic,
+       CONCAT(s.firstname, ' ', s.lastname) AS assigned_to,
+       CONCAT(u.firstname, ' ', u.lastname) AS user_name,
+       u.email  AS user_email
+     FROM tickets t
+     INNER JOIN ticket_status ts ON ts.id = t.status_id
+     INNER JOIN priorities p     ON p.id  = t.priority_id
+     INNER JOIN departments d    ON d.id  = t.dept_id
+     INNER JOIN users u          ON u.id  = t.user_id
+     LEFT  JOIN help_topics ht   ON ht.id = t.topic_id
+     LEFT  JOIN staff s          ON s.id  = t.staff_id
+     WHERE ${conditions.join(' AND ')}
+     LIMIT 1`,
+    values,
+  )
+
+  return (rows[0] as TicketDetailHeader | undefined) ?? null
+}
+
+
+// Trae los mensajes  + adjuntos
+export async function findThreadWithEntries(params: {
+  ticket_id:        number
+  empresa_id:       number
+  include_internal: boolean
+}): Promise<ThreadEntryView[]> {
+
+  const conditions: string[] = ['th.ticket_id = ?', 'th.empresa_id = ?']
+  const values: unknown[]    = [params.ticket_id, params.empresa_id]
+
+  // Si es usuario agregamos el filtro — agente no lleva esta línea
+  if (!params.include_internal) {
+    conditions.push('te.is_internal = 0')
+  }
+
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT
+       te.id, te.body, te.is_internal, te.created_at,
+       CONCAT(u.firstname, ' ', u.lastname) AS user_name,
+       CONCAT(s.firstname, ' ', s.lastname) AS staff_name,
+       JSON_ARRAYAGG(
+         IF(a.id IS NOT NULL,
+           JSON_OBJECT(
+             'filename', a.original_filename,
+             'mimetype', a.mimetype,
+             'size',     a.size
+           ),
+           NULL)
+       ) AS attachments
+     FROM threads th
+     INNER JOIN thread_entries te ON te.thread_id = th.id
+     LEFT  JOIN users u           ON u.id = te.user_id
+     LEFT  JOIN staff s           ON s.id = te.staff_id
+     LEFT  JOIN attachments a     ON a.thread_entry_id = te.id
+     WHERE ${conditions.join(' AND ')}
+     GROUP BY te.id
+     ORDER BY te.created_at ASC`,
+    values,
+  )
+
+  return rows as ThreadEntryView[]
 }

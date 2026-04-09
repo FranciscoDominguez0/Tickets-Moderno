@@ -8,6 +8,8 @@ import {
   getTicketsForAgentController,
   createTicketController,
   createTicketByAgentController,
+  getTicketDetailForUserController,
+  getTicketDetailForAgentController,
 } from './ticket.controller.js'
 
 // ─────────────────────────────────────────────
@@ -21,7 +23,7 @@ ticketUserRouter.use(tenantMiddleware, requireAuth, requireRole('user'))
 
 ticketUserRouter.get('/tickets',  getTicketsForUserController)               // GET  /api/user/tickets
 ticketUserRouter.post('/tickets', uploadAttachment, createTicketController)  // POST /api/user/tickets
-
+ticketUserRouter.get('/tickets/:id',  getTicketDetailForUserController) // GET  /api/user/tickets/:id
 // ─────────────────────────────────────────────
 // Router de AGENTES / ADMIN
 // index.ts monta en: /agent
@@ -33,3 +35,4 @@ ticketAgentRouter.use(tenantMiddleware, requireAuth, requireRole('agent', 'admin
 
 ticketAgentRouter.get('/tickets',  getTicketsForAgentController)                    // GET  /api/agent/tickets
 ticketAgentRouter.post('/tickets', uploadAttachment, createTicketByAgentController) // POST /api/agent/tickets
+ticketAgentRouter.get('/tickets/:id',  getTicketDetailForAgentController) // GET  /api/agent/tickets/:id

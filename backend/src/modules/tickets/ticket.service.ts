@@ -8,6 +8,8 @@ import {
   insertThreadEntry,
   insertAttachment,
   insertThread,
+  findTicketDetail,
+  findThreadWithEntries,
 } from "./ticket.repository.js";
 import {
   parsePagination,
@@ -21,6 +23,7 @@ import type {
   ListTicketsAgentQuery,
   CreateTicketDto,
   CreateTicketResult,
+  TicketDetailResult,
 } from "./ticket.types.js";
 import { NotFoundError, ValidationError } from "./ticket.errors.js";
 import { generateTicketNumber } from "../../utils/ticketNumber.js";
@@ -173,4 +176,60 @@ export async function createTicket(params: {
     topic: topic.name,
     created_at: new Date().toISOString(),
   };
+}
+
+// ════════════════════════════════════════════════════════════
+// Núcleo privado — no se exporta, solo lo usan los dos wrappers
+// ════════════════════════════════════════════════════════════
+
+async function getTicketDetailBase(params: {
+  ticket_id:        number
+  empresa_id:       number
+  user_id?:         number    // solo cuando lo llama getTicketDetailForUser
+  include_internal: boolean
+}): Promise<TicketDetailResult> {
+
+  // Las dos queries corren en paralelo — no hay dependencia entre ellas
+  const [header, thread] = await Promise.all([
+    findTicketDetail({
+      ticket_id:  params.ticket_id,
+      empresa_id: params.empresa_id,
+      user_id:    params.user_id,
+    }),
+    findThreadWithEntries({
+      ticket_id:        params.ticket_id,
+      empresa_id:       params.empresa_id,
+      include_internal: params.include_internal,
+    }),
+  ])
+
+  // null cubre dos casos: ticket no existe ó no pertenece al usuario
+  // Ambos deben devolver 404, nunca revelar cuál fue la razón
+  if (!header) throw new NotFoundError('Ticket no encontrado')
+
+  return { ...header, thread }
+}
+
+// ── Wrapper para usuario ─────────────────────────────────────
+export async function getTicketDetailForUser(params: {
+  ticket_id:  number
+  empresa_id: number
+  user_id:    number          // obligatorio — protege ownership
+}): Promise<TicketDetailResult> {
+  return getTicketDetailBase({
+    ...params,
+    include_internal: false,  // nunca ve notas internas
+  })
+}
+
+// ── Wrapper para agente ──────────────────────────────────────
+export async function getTicketDetailForAgent(params: {
+  ticket_id:  number
+  empresa_id: number
+  // no recibe user_id — puede ver cualquier ticket de la empresa
+}): Promise<TicketDetailResult> {
+  return getTicketDetailBase({
+    ...params,
+    include_internal: true,   // ve todo incluyendo notas internas
+  })
 }

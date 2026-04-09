@@ -1,6 +1,8 @@
 import type { Request, Response }  from 'express'
 import {
   createTicket,
+  getTicketDetailForAgent,
+  getTicketDetailForUser,
   listMyTicketsSummary,
   listTicketsForAgent,
 } from './ticket.service.js'
@@ -146,6 +148,61 @@ export async function createTicketByAgentController(
       return
     }
     console.error('createTicketByAgentController error:', err)
+    res.status(500).json({ message: 'Error interno del servidor' })
+  }
+}
+
+// ── GET /api/user/tickets/:id ────────────────────────────────
+export async function getTicketDetailForUserController(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const auth       = res.locals.auth as JwtPayload
+    const empresa_id = Number(res.locals.empresa_id)
+    const ticket_id  = Number(req.params.id)
+
+    if (!ticket_id || isNaN(ticket_id)) {
+      res.status(400).json({ message: 'ID de ticket inválido' })
+      return
+    }
+
+    const result = await getTicketDetailForUser({
+      ticket_id,
+      empresa_id,
+      user_id: auth.id,  // ← siempre pasa su propio id
+    })
+
+    res.json(result)
+  } catch (err) {
+    if (err instanceof NotFoundError)   { res.status(404).json({ message: err.message }); return }
+    if (err instanceof ValidationError) { res.status(400).json({ message: err.message }); return }
+    console.error('getTicketDetailForUserController error:', err)
+    res.status(500).json({ message: 'Error interno del servidor' })
+  }
+}
+
+// ── GET /api/agent/tickets/:id ───────────────────────────────
+export async function getTicketDetailForAgentController(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const empresa_id = Number(res.locals.empresa_id)
+    const ticket_id  = Number(req.params.id)
+
+    if (!ticket_id || isNaN(ticket_id)) {
+      res.status(400).json({ message: 'ID de ticket inválido' })
+      return
+    }
+
+    const result = await getTicketDetailForAgent({ ticket_id, empresa_id })
+
+    res.json(result)
+  } catch (err) {
+    if (err instanceof NotFoundError)   { res.status(404).json({ message: err.message }); return }
+    if (err instanceof ValidationError) { res.status(400).json({ message: err.message }); return }
+    console.error('getTicketDetailForAgentController error:', err)
     res.status(500).json({ message: 'Error interno del servidor' })
   }
 }
